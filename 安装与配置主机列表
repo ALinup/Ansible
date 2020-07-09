@@ -1,0 +1,50 @@
+1、安装：
+yum install epel-release -y
+yum install ansible –y
+
+2、配置主机列表：
+vim /etc/ansible/hosts
+加入以下名称为web的主机组
+[web]
+192.168.159.129
+192.168.159.130
+
+3、使用以下命令查看ansible-doc的全部用法：
+ansible-doc
+以mysql为例：
+ansible-doc -l |grep mysql
+ansible-doc -s mysql_user
+
+4、比较常用的选项：
+-h 查看帮助
+-a MODULE_ARGS　　　#模块的参数，如果执行默认COMMAND的模块，即是命令参数，如： “date”，“pwd”等等
+-k，--ask-pass #ask for SSH password。登录密码，提示输入SSH密码而不是假设基于密钥的验证
+--ask-su-pass #ask for su password。su切换密码
+-K，--ask-sudo-pass #ask for sudo password。提示密码使用sudo，sudo表示提权操作
+--ask-vault-pass #ask for vault password。假设我们设定了加密的密码，则用该选项进行访问
+-B SECONDS #后台运行超时时间
+-C #模拟运行环境并进行预运行，可以进行查错测试
+-c CONNECTION #连接类型使用
+-f FORKS #并行任务数，默认为5
+-i INVENTORY #指定主机清单的路径，默认为/etc/ansible/hosts
+--list-hosts #查看有哪些主机组
+-m MODULE_NAME #执行模块的名字，默认使用 command 模块，所以如果是只执行单一命令可以不用 -m参数
+-o #压缩输出，尝试将所有结果在一行输出，一般针对收集工具使用
+-S #用 su 命令
+-R SU_USER #指定 su 的用户，默认为 root 用户
+-s #用 sudo 命令
+-U SUDO_USER #指定 sudo 到哪个用户，默认为 root 用户
+-T TIMEOUT #指定 ssh 默认超时时间，默认为10s，也可在配置文件中修改
+-u REMOTE_USER #远程用户，默认为 root 用户
+-v #查看详细信息，同时支持-vvv，-vvvv可查看更详细信息
+
+5、配置公私钥：
+ansible是基于ssh协议实现的，所以其配置公私钥的方式与ssh协议的方式相同：
+生成私钥：
+ssh-keygen
+向主机分发私钥：
+ssh-copy-id root@192.168.159.129
+ssh-copy-id root@192.168.159.130
+这样的话，就可以实现无密码登录，我们的实验过程也会顺畅很多。
+报错：-bash: ssh-copy-id: command not found
+解决办法：yum -y install openssh-clientsansible
