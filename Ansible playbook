@@ -9,11 +9,110 @@ tasks：指定远端主机将要执行的一系列动作。tasks 的核心为 an
 执行有三个步骤：1、收集facts 2、执行tasks 3、报告结果
 
 例子：
-[root@server ansible]# vim mysql.yml
+1、定义playbook
+[root@server ansible]# vim httpd.yml
 输入以下内容：
+---
+- hosts: web
+  remote_user: root
+  tasks:
 
-运行：
-[root@server ansible]# ansible-playbook mysql.yml
+    - name: install httpd
+      yum: name=httpd state=present
+    - name: copy httpd.conf
+      copy: src=/tmp/httpd.conf dest=/etc/httpd/conf/httpd.conf backup=yes
+      notify: reload
+      tags: reloadhttpd
+    - name: start httpd service
+      service: name=httpd state=started
+      tags: starthttpd
+
+  handlers:
+    - name: reload
+      service: name=httpd state=restarted
+      
+2、测试运行结果
+[root@server ansible]# ansible-playbook httpd.yml
+
+PLAY [web] *************************************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************
+ok: [192.168.159.129]
+ok: [192.168.159.130]
+
+TASK [install httpd] ***************************************************************************************
+changed: [192.168.159.129]
+changed: [192.168.159.130]
+
+TASK [copy httpd.conf] *************************************************************************************
+ok: [192.168.159.130]
+ok: [192.168.159.129]
+
+TASK [start httpd service] *********************************************************************************
+changed: [192.168.159.129]
+changed: [192.168.159.130]
+
+PLAY RECAP *************************************************************************************************
+192.168.159.129            : ok=4    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+192.168.159.130            : ok=4    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
 查看端口是否开启：
 [root@server ansible]# ansible web -m shell -a 'ss -nutlp |grep httpd'
+192.168.159.129 | CHANGED | rc=0 >>
+tcp    LISTEN     0      128      :::80                   :::*                   users:(("httpd",pid=18569,fd=4),("httpd",pid=18568,fd=4),("httpd",pid=18567,fd=4),("httpd",pid=18566,fd=4),("httpd",pid=18565,fd=4),("httpd",pid=18564,fd=4))
+192.168.159.130 | CHANGED | rc=0 >>
+tcp    LISTEN     0      128      :::80                   :::*                   users:(("httpd",pid=18559,fd=4),("httpd",pid=18558,fd=4),("httpd",pid=18557,fd=4),("httpd",pid=18556,fd=4),("httpd",pid=18555,fd=4),("httpd",pid=18553,fd=4))
+
+3、测试标签
+关闭服务：
+[root@server ansible]# ansible web -m shell -a 'systemctl stop httpd'
+192.168.159.130 | CHANGED | rc=0 >>
+
+192.168.159.129 | CHANGED | rc=0 >>
+
+测试开启服务标签：
+[root@server ansible]# ansible-playbook httpd.yml -t starthttpd
+
+PLAY [web] *************************************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************
+ok: [192.168.159.129]
+ok: [192.168.159.130]
+
+TASK [start httpd service] *********************************************************************************
+changed: [192.168.159.130]
+changed: [192.168.159.129]
+
+PLAY RECAP *************************************************************************************************
+192.168.159.129            : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+192.168.159.130            : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+4、测试notify
+更改端口为8080：
+[root@server ansible]# vim /tmp/httpd.conf
+重新加载剧本：
+[root@server ansible]# ansible-playbook httpd.yml -t reloadhttpd
+
+PLAY [web] *************************************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************
+ok: [192.168.159.130]
+ok: [192.168.159.129]
+
+TASK [copy httpd.conf] *************************************************************************************
+changed: [192.168.159.130]
+changed: [192.168.159.129]
+
+RUNNING HANDLER [reload] ***********************************************************************************
+changed: [192.168.159.130]
+changed: [192.168.159.129]
+
+PLAY RECAP *************************************************************************************************
+192.168.159.129            : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+192.168.159.130            : ok=3    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+查看端口：
+[root@server ansible]# ansible web -m shell -a 'ss -ntlp | grep httpd'
+192.168.159.129 | CHANGED | rc=0 >>
+LISTEN     0      128         :::8080                    :::*                   users:(("httpd",pid=19044,fd=4),("httpd",pid=19043,fd=4),("httpd",pid=19042,fd=4),("httpd",pid=19041,fd=4),("httpd",pid=19040,fd=4),("httpd",pid=19039,fd=4))
+192.168.159.130 | CHANGED | rc=0 >>
+LISTEN     0      128         :::8080                    :::*                   users:(("httpd",pid=19035,fd=4),("httpd",pid=19034,fd=4),("httpd",pid=19033,fd=4),("httpd",pid=19032,fd=4),("httpd",pid=19031,fd=4),("httpd",pid=19030,fd=4))
