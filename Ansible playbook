@@ -1,0 +1,19 @@
+我们的文件名称应该以.yml结尾，像我们上面的例子就是mysql.yml。其中，有三个部分组成：
+host部分：使用 hosts 指示使用哪个主机或主机组来运行下面的 tasks ，每个 playbook 都必须指定 hosts ，hosts也可以使用通配符格式。主机或主机组在 inventory 清单中指定，可以使用系统默认的/etc/ansible/hosts，也可以自己编辑，在运行的时候加上-i选项，指定清单的位置即可。在运行清单文件的时候，–list-hosts选项会显示那些主机将会参与执行 task 的过程中。
+remote_user：指定远端主机中的哪个用户来登录远端系统，在远端系统执行 task 的用户，可以任意指定，也可以使用 sudo，但是用户必须要有执行相应 task 的权限。
+tasks：指定远端主机将要执行的一系列动作。tasks 的核心为 ansible 的模块，前面已经提到模块的用法。tasks 包含 name 和要执行的模块，name 是可选的，只是为了便于用户阅读，不过还是建议加上去，模块是必须的，同时也要给予模块相应的参数。
+使用ansible-playbook运行playbook文件，得到如下输出信息，输出内容为JSON格式。并且由不同颜色组成，便于识别。一般而言:
+| 绿色代表执行成功，系统保持原样
+| 黄色代表系统代表系统状态发生改变
+| 红色代表执行失败，显示错误输出
+执行有三个步骤：1、收集facts 2、执行tasks 3、报告结果
+
+例子：
+[root@server ansible]# vim mysql.yml
+输入以下内容：
+
+运行：
+[root@server ansible]# ansible-playbook mysql.yml
+
+查看端口是否开启：
+[root@server ansible]# ansible web -m shell -a 'ss -nutlp |grep httpd'
